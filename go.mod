@@ -1,4 +1,4 @@
-module BlockScope
+module github.com/Yintc123/BlockScope
 
 go 1.25.7
 
