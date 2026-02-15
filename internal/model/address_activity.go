@@ -3,9 +3,9 @@ package model
 import "time"
 
 type AddressActivity struct {
-	ID           uint `gorm:"primaryKey"`
-	Address      string
+	ID           uint   `gorm:"primaryKey"`
+	Address      string `gorm:"index"`
 	TxHash       string
-	ActivityDate time.Time
+	ActivityDate time.Time `gorm:"index"`
 	createAt     time.Time
 }
