@@ -1,25 +1,23 @@
 package db
 
 import (
-	"log"
+	"errors"
+	"fmt"
 
+	"github.com/Yintc123/BlockScope/internal/config"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
-var DB *gorm.DB
-
-func InitDB() {
-	var dataSourceName string = "host=localhost user=postgres password=postgres dbname=blockscope port=5432 sslmode=disable"
-
-	var (
-		db  *gorm.DB
-		err error
-	)
-	db, err = gorm.Open(postgres.Open(dataSourceName), &gorm.Config{})
-	if err != nil {
-		log.Fatal("fail to connect db: ", err)
+func NewDB(dbConfig config.DBConfig) (*gorm.DB, error) {
+	switch dbConfig.Driver {
+	case "postgres":
+		var dataSourceName string = fmt.Sprintf(
+			"host=%s user=%s password=%s dbname=%s port=%d sslmode=%s",
+			dbConfig.Host, dbConfig.User, dbConfig.Password, dbConfig.Name, dbConfig.Port, dbConfig.SSLMode,
+		)
+		return gorm.Open(postgres.Open(dataSourceName), &gorm.Config{})
+	default:
+		return nil, errors.New("unsupport db driver.")
 	}
-
-	DB = db
 }
