@@ -15,7 +15,7 @@ type Config struct {
 
 type AppConfig struct {
 	Name      string
-	Port      string
+	Port      int
 	ChainList []string
 }
 
@@ -27,6 +27,15 @@ type DBConfig struct {
 	Password string
 	Name     string
 	SSLMode  string
+}
+
+func mustEnv(key string) string {
+	var value string = os.Getenv(key)
+	if value == "" {
+		panic("Missing env: " + key)
+	}
+
+	return value
 }
 
 func mustEnvInt(key string) int {
@@ -62,7 +71,7 @@ func LoadConfig(env string) *Config {
 	var commonChains []string = []string{"eth", "btc", "sol"}
 	var commonAppName string = "BlockScope"
 	// 由於 env 取得的值一定為 string，需要轉型為 int
-	var dbPort int = mustEnvInt(os.Getenv("DB_PORT"))
+	var dbPort int = mustEnvInt("DB_PORT")
 
 	// 共用參數
 	var config *Config = &Config{
@@ -72,27 +81,22 @@ func LoadConfig(env string) *Config {
 			ChainList: commonChains,
 		},
 		DB: DBConfig{
-			Driver:  "postgres",
-			SSLMode: "disable",
+			Driver:   "postgres",
+			Host:     mustEnv("DB_HOST"),
+			Port:     dbPort,
+			Name:     mustEnv("DB_NAME"),
+			User:     mustEnv("DB_USER"),
+			Password: mustEnv("DB_PASSWORD"),
+			SSLMode:  "disable",
 		},
 	}
 
 	// 環境差異
 	switch envToLower {
 	case "local":
-		config.App.Port = "8080"
-		config.DB.Host = os.Getenv("DB_HOST")
-		config.DB.Port = dbPort
-		config.DB.Name = os.Getenv("DB_NAME")
-		config.DB.User = os.Getenv("DB_USER")
-		config.DB.Password = os.Getenv("DB_PASSWORD")
+		config.App.Port = 8080
 	case "production":
-		config.App.Port = "80"
-		config.DB.Host = os.Getenv("DB_HOST")
-		config.DB.Port = dbPort
-		config.DB.Name = os.Getenv("DB_NAME")
-		config.DB.User = os.Getenv("DB_USER")
-		config.DB.Password = os.Getenv("DB_PASSWORD")
+		config.App.Port = 80
 	}
 
 	return config
