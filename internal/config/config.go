@@ -59,12 +59,14 @@ func LoadConfig(env string) *Config {
 		config.App.Port = "8080"
 		config.DB.Host = os.Getenv("DB_HOST")
 		config.DB.Port = os.Getenv("DB_PORT")
+		config.DB.Name = os.Getenv("DB_NAME")
 		config.DB.User = os.Getenv("DB_USER")
 		config.DB.Password = os.Getenv("DB_PASSWORD")
 	case "production":
 		config.App.Port = "80"
 		config.DB.Host = os.Getenv("DB_HOST")
 		config.DB.Port = os.Getenv("DB_PORT")
+		config.DB.Name = os.Getenv("DB_Name")
 		config.DB.User = os.Getenv("DB_USER")
 		config.DB.Password = os.Getenv("DB_PASSWORD")
 	}
