@@ -9,8 +9,8 @@ import (
 	"github.com/Yintc123/BlockScope/internal/db"
 	"github.com/Yintc123/BlockScope/internal/repository"
 	"github.com/Yintc123/BlockScope/internal/service"
-	"github.com/Yintc123/BlockScope/internal/transport/http"
 	"github.com/Yintc123/BlockScope/internal/transport/http/handler"
+	http "github.com/Yintc123/BlockScope/internal/transport/http/routes"
 	"github.com/gin-gonic/gin"
 )
 
@@ -48,10 +48,15 @@ func bootstrap() (*gin.Engine, string, error) {
 
 	// 4. 初始化 router
 	router := gin.Default()
-	http.RegisterRoutes(
+	http.RegisterHealthcheckRoutes(
 		router,
-		statsHandler,
 		healthHandler,
+	)
+
+	statsGroup := router.Group("/stats")
+	http.RegisterStatsRoutes(
+		statsGroup,
+		statsHandler,
 	)
 
 	return router, fmt.Sprintf("%d", cfg.App.Port), nil

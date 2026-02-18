@@ -5,15 +5,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func RegisterRoutes(
+func RegisterHealthcheckRoutes(
 	router *gin.Engine,
-	statsHandler *handler.StatsHandler,
 	healthcheckHandler *handler.HealthcheckHandler,
 ) {
-	// /stats Group
-	stats := router.Group("/stats")
-	{
-		stats.GET("/daily-active-address", statsHandler.GetDailyActiveAddress)
-	}
 	router.GET("/health", healthcheckHandler.Check)
 }
