@@ -43,9 +43,16 @@ func bootstrap() (*gin.Engine, string, error) {
 	svc := service.NewDailyActiveAddressService(repo)
 	statsHandler := handler.NewStatsHandler(svc)
 
+	healthSvc := service.NewHealthCheckService(dbConn)
+	healthHandler := handler.NewHealthcheckHandler(healthSvc)
+
 	// 4. 初始化 router
 	router := gin.Default()
-	http.RegisterRoutes(router, statsHandler)
+	http.RegisterRoutes(
+		router,
+		statsHandler,
+		healthHandler,
+	)
 
 	return router, fmt.Sprintf("%d", cfg.App.Port), nil
 }
