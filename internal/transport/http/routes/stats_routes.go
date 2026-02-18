@@ -10,4 +10,5 @@ func RegisterStatsRoutes(
 	statsHandler *handler.StatsHandler,
 ) {
 	router.GET("/daily-active-address", statsHandler.GetDailyActiveAddress)
+	router.GET("/test", statsHandler.TestAPI)
 }

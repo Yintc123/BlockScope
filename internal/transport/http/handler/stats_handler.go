@@ -52,3 +52,9 @@ func (handler *StatsHandler) GetDailyActiveAddress(ctx *gin.Context) {
 		"count": result.Count,
 	})
 }
+
+func (handler *StatsHandler) TestAPI(ctx *gin.Context) {
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "ok",
+	})
+}
