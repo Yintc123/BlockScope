@@ -6,10 +6,14 @@ import (
 )
 
 func RegisterRoutes(
-	route *gin.Engine,
+	router *gin.Engine,
 	statsHandler *handler.StatsHandler,
 	healthcheckHandler *handler.HealthcheckHandler,
 ) {
-	route.GET("/stats/daily-active-address", statsHandler.GetDailyActiveAddress)
-	route.GET("/health", healthcheckHandler.Check)
+	// /stats Group
+	stats := router.Group("/stats")
+	{
+		stats.GET("/daily-active-address", statsHandler.GetDailyActiveAddress)
+	}
+	router.GET("/health", healthcheckHandler.Check)
 }
