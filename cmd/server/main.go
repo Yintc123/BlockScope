@@ -48,7 +48,7 @@ func bootstrap() (*gin.Engine, string, error) {
 
 	// 4. 初始化 router
 	router := gin.Default()
-	http.RegisterHealthcheckRoutes(
+	http.RegisterRootRoutes(
 		router,
 		healthHandler,
 	)

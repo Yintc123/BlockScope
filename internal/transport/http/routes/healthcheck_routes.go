@@ -5,7 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func RegisterHealthcheckRoutes(
+func RegisterRootRoutes(
 	router *gin.Engine,
 	healthcheckHandler *handler.HealthcheckHandler,
 ) {
