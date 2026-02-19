@@ -187,7 +187,56 @@ The project supports multiple environment configurations:
 - **handler**: HTTP request handlers that receive and return HTTP responses
 - **validator**: Request parameter validation to ensure data validity
 
-### 📄 License
+### � Design Decisions and Best Practices
+
+#### Context Lifecycle Management
+
+**Related Code Location**
+- Path: [internal/transport/http/handler/healthcheck_handler.go](internal/transport/http/handler/healthcheck_handler.go)
+- Method: `Check()`
+- Dependency: `CheckDB(ctx context.Context)` in [internal/service/healthcheck_service.go](internal/service/healthcheck_service.go)
+
+**Background**
+
+The `CheckDB()` method requires a valid context object to control the database health check operation through `sqlDB.PingContext(ctx)`.
+
+**Frequently Asked Questions**
+
+**Q1: Does using `context.Background()` waste resources?**
+
+No. `context.Background()` creates a lightweight root context with the following characteristics:
+
+- Consumes minimal memory resources
+- Does not spawn additional goroutines
+- Does not hold external resources (e.g., database connections, file handles)
+- Is a non-cancellable, timeout-free root context
+
+**Q2: Does repeatedly creating context objects when calling APIs accumulate over time?**
+
+No. Go's garbage collection (GC) mechanism automatically reclaims unused context objects, so accumulation is not a concern.
+
+**Recommended Optimization**
+
+In production applications, you should use the request context provided by the Gin framework instead of `context.Background()`:
+
+```go
+func (handler *HealthcheckHandler) Check(c *gin.Context) {
+	ctx := c.Request.Context()  // Use HTTP request's context
+	
+	dbErr := handler.service.CheckDB(ctx)
+	// ...
+}
+```
+
+**Optimization Benefits**
+
+| Benefit | Description |
+|---------|-------------|
+| **Resource Efficiency** | Avoids creating a new context object for each request |
+| **Lifecycle Synchronization** | When HTTP request is cancelled or times out, downstream database operations also stop automatically |
+| **Trace Consistency** | Retains HTTP request trace context information for distributed tracing and monitoring |
+
+### �📄 License
 
 [Specify your license]
 
@@ -393,3 +442,52 @@ GET /stats/daily-active-address?date=2024-01-01&chain=eth
 ### 👤 作者
 
 Yintc123
+
+### 📌 設計決策與最佳實踐
+
+#### Context 生命週期管理
+
+**相關代碼位置**
+- 位置：[internal/transport/http/handler/healthcheck_handler.go](internal/transport/http/handler/healthcheck_handler.go)
+- 方法：`Check()`
+- 依賴：[internal/service/healthcheck_service.go](internal/service/healthcheck_service.go) 中的 `CheckDB(ctx context.Context)`
+
+**背景**
+
+`CheckDB()` 方法需要透過 `sqlDB.PingContext(ctx)` 對資料庫進行健康檢查，因此需要傳入一個有效的 context 物件以控制該操作的生命週期。
+
+**常見問題**
+
+**Q1：使用 `context.Background()` 會造成資源浪費嗎？**
+
+不會。`context.Background()` 建立的是一個輕量級的根 context，具有以下特點：
+
+- 幾乎不佔用記憶體資源
+- 不啟動額外的 goroutine
+- 不持有外部資源（如数据库連接、檔案句柄等）
+- 是一個不可取消、無超時限制的 root context
+
+**Q2：頻繁呼叫 API 時，重複建立 context 物件是否會累積？**
+
+不會。Go 的垃圾回收機制（GC）會自動回收未被引用的 context 物件，因此不存在累積問題。
+
+**推薦優化方案**
+
+在實務應用中，應直接使用 Gin 框架提供的 request context，而非 `context.Background()`：
+
+```go
+func (handler *HealthcheckHandler) Check(c *gin.Context) {
+	ctx := c.Request.Context()  // 使用 HTTP 請求的 context
+	
+	dbErr := handler.service.CheckDB(ctx)
+	// ...
+}
+```
+
+**優化的優勢**
+
+| 優勢 | 說明 |
+|------|------|
+| **資源效率** | 避免為每次請求建立新的 context 物件 |
+| **生命週期同步** | HTTP 請求被取消或逾時時，下游的資料庫操作也會自動停止 |
+| **追蹤一致性** | 保留 HTTP 請求的追蹤上下文信息，便於分散式追蹤和監控 |
