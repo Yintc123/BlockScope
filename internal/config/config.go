@@ -53,19 +53,26 @@ func mustEnvInt(key string) int {
 	return valueInt
 }
 
+func normalizeEnv(env string) string {
+	switch strings.ToLower(env) {
+	case "production", "local", "test":
+		return strings.ToLower(env)
+	default:
+		return "local"
+	}
+}
+
 // LoadConfig 初始化 Config，根據 env 選擇 local / production
 func LoadConfig(env string) *Config {
-	var envToLower = strings.ToLower(env)
-	if envToLower != "production" {
-		envToLower = "local"
-	}
+	env = normalizeEnv(env)
 
-	// godotenv.Load(".env." + envToLower)
-	switch envToLower {
-	case "local":
-		godotenv.Load(".env.local")
+	switch env {
 	case "production":
 		godotenv.Load(".env")
+	case "local":
+		godotenv.Load(".env.local")
+	case "test":
+		godotenv.Load(".env.test")
 	}
 
 	var commonChains []string = []string{"eth", "btc", "sol"}
@@ -92,7 +99,7 @@ func LoadConfig(env string) *Config {
 	}
 
 	// 環境差異
-	switch envToLower {
+	switch env {
 	case "local":
 		config.App.Port = 8080
 	case "production":
