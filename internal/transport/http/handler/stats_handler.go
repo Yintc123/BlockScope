@@ -40,7 +40,7 @@ func (handler *StatsHandler) GetDailyActiveAddress(ctx *gin.Context) {
 	var result *domain.DailyActiveAddress
 	var err error
 	result, err = handler.service.GetDailyActiveAddress(ctx.Request.Context(), date, req.Chain)
-	if err != nil {
+	if err != nil || result == nil {
 		ctx.JSON(http.StatusNotFound, gin.H{"error": "data not found"})
 		return
 	}
