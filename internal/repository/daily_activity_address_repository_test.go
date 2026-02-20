@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
@@ -13,8 +12,6 @@ import (
 )
 
 func TestDailyActiveAddressRepository_Integration(t *testing.T) {
-	fmt.Println("test repo")
-
 	// 1. 初始化配置與 DB
 	cfg, _ := config.LoadConfig("test")
 	dbConn, err := db.NewDB(cfg.DB)
@@ -24,7 +21,6 @@ func TestDailyActiveAddressRepository_Integration(t *testing.T) {
 
 	// 確保表結構符合最新的 domain 定義
 	dbConn.AutoMigrate(&domain.DailyActiveAddress{})
-	fmt.Println("db auto migrate")
 
 	repo := NewDailyActiveAddressRepository(dbConn)
 	ctx := context.Background()
