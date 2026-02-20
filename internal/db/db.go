@@ -16,7 +16,21 @@ func NewDB(dbConfig config.DBConfig) (*gorm.DB, error) {
 			"host=%s user=%s password=%s dbname=%s port=%d sslmode=%s",
 			dbConfig.Host, dbConfig.User, dbConfig.Password, dbConfig.Name, dbConfig.Port, dbConfig.SSLMode,
 		)
-		return gorm.Open(postgres.Open(dataSourceName), &gorm.Config{})
+		db, err := gorm.Open(postgres.Open(dataSourceName), &gorm.Config{})
+		if err != nil {
+			return nil, err
+		}
+
+		// 檢查連線是否可用
+		sqlDB, err := db.DB()
+		if err != nil {
+			return nil, err
+		}
+		if err := sqlDB.Ping(); err != nil {
+			return nil, fmt.Errorf("db ping failed: %w", err)
+		}
+
+		return db, nil
 	default:
 		return nil, errors.New("unsupport db driver.")
 	}
