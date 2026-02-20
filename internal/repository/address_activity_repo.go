@@ -15,6 +15,10 @@ type DailyActiveAddressRepository interface {
 		date time.Time,
 		chain string,
 	) (*domain.DailyActiveAddress, error)
+	Create(
+		ctx context.Context,
+		address *domain.DailyActiveAddress,
+	) error
 }
 
 type dailyActiveAddressRepo struct {
@@ -49,4 +53,11 @@ func (repo *dailyActiveAddressRepo) FindByDate(
 
 	// 回應時建立一個新的 DailyActiveAddress 物件
 	return &result, nil
+}
+
+func (repo *dailyActiveAddressRepo) Create(
+	ctx context.Context,
+	address *domain.DailyActiveAddress,
+) error {
+	return repo.db.WithContext(ctx).Create(address).Error
 }
