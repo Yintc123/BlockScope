@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -29,27 +30,34 @@ type DBConfig struct {
 	SSLMode  string
 }
 
-func mustEnv(key string) string {
+func getEnv(key string) (string, error) {
 	var value string = os.Getenv(key)
 	if value == "" {
-		panic("Missing env: " + key)
+		return "", fmt.Errorf("Missing required env: %s", key)
 	}
 
+	return value, nil
+}
+
+func getEnvWIthDefault(key string, defaultValue string) string {
+	var value string = os.Getenv(key)
+	if value == "" {
+		return defaultValue
+	}
 	return value
 }
 
-func mustEnvInt(key string) int {
+func getEnvInt(key string, defaultValue int) int {
 	var valueFromEnv string = os.Getenv(key)
 	if valueFromEnv == "" {
-		panic("Missing env: " + key)
+		return defaultValue
 	}
 	var valueInt int
 	var err error
 	valueInt, err = strconv.Atoi(valueFromEnv)
 	if err != nil {
-		panic("invalid int env: " + key)
+		return defaultValue
 	}
-
 	return valueInt
 }
 
@@ -63,7 +71,7 @@ func normalizeEnv(env string) string {
 }
 
 // LoadConfig 初始化 Config，根據 env 選擇 local / production
-func LoadConfig(env string) *Config {
+func LoadConfig(env string) (*Config, error) {
 	env = normalizeEnv(env)
 
 	switch env {
@@ -75,36 +83,37 @@ func LoadConfig(env string) *Config {
 		godotenv.Load(".env.test")
 	}
 
-	var commonChains []string = []string{"eth", "btc", "sol"}
-	var commonAppName string = "BlockScope"
-	// 由於 env 取得的值一定為 string，需要轉型為 int
-	var dbPort int = mustEnvInt("DB_PORT")
+	// 關鍵參數建議使用 getEnv 進行嚴格檢查
+	dbHost, err := getEnv("DB_HOST")
+	if err != nil {
+		return nil, err
+	}
 
 	// 共用參數
 	var config *Config = &Config{
 		App: AppConfig{
-			Name: commonAppName,
+			Name: "BlockScope",
 			// Port: "8080",
-			ChainList: commonChains,
+			ChainList: []string{"eth", "btc", "sol"},
 		},
 		DB: DBConfig{
 			Driver:   "postgres",
-			Host:     mustEnv("DB_HOST"),
-			Port:     dbPort,
-			Name:     mustEnv("DB_NAME"),
-			User:     mustEnv("DB_USER"),
-			Password: mustEnv("DB_PASSWORD"),
-			SSLMode:  "disable",
+			Host:     dbHost,
+			Port:     getEnvInt("DB_PORT", 5432),
+			Name:     getEnvWIthDefault("DB_NAME", "blockscope"),
+			User:     getEnvWIthDefault("DB_USER", "postgres"),
+			Password: os.Getenv("DB_PASSWORD"), // 密碼允許為空
+			SSLMode:  getEnvWIthDefault("DB_SSLMODE", "disable"),
 		},
 	}
 
 	// 環境差異
 	switch env {
-	case "local":
-		config.App.Port = 8080
 	case "production":
 		config.App.Port = 80
+	default:
+		config.App.Port = 8080
 	}
 
-	return config
+	return config, nil
 }

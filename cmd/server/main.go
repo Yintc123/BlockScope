@@ -30,7 +30,7 @@ func main() {
 // bootstrap 負責初始化 config / db / repository / service / handler
 func bootstrap() (*gin.Engine, string, error) {
 	// 1. 載入 config
-	cfg := config.LoadConfig(os.Getenv("APP_ENV"))
+	cfg, err := config.LoadConfig(os.Getenv("APP_ENV"))
 
 	// 2. 初始化 DB
 	dbConn, err := db.NewDB(cfg.DB)
