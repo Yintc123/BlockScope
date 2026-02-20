@@ -3,9 +3,11 @@ package config
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
+	"github.com/Yintc123/BlockScope/internal/util"
 	"github.com/joho/godotenv"
 )
 
@@ -80,7 +82,12 @@ func LoadConfig(env string) (*Config, error) {
 	case "local":
 		godotenv.Load(".env.local")
 	case "test":
-		godotenv.Load(".env.test")
+		// 要依據 path.go 的位置尋找 .env.test 的檔案路徑，故傳入 skip = 0
+		var rootPath string = util.GetProjectRoot(0, ".env.test")
+		err := godotenv.Load(filepath.Join(rootPath, ".env.test"))
+		if err != nil {
+			return nil, fmt.Errorf("could not load .env.test from %s: %w", rootPath, err)
+		}
 	}
 
 	// 關鍵參數建議使用 getEnv 進行嚴格檢查
