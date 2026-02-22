@@ -38,12 +38,13 @@ BlockScope/
 ### 🛠️ 技術棧
 
 - **語言**：Go 1.25.7
-- **Web 框架**：Gin
-- **數據庫**：PostgreSQL
-- **ORM**：GORM
-- **數據庫遷移**：golang-migrate
-- **配置管理**：godotenv
-- **驗證器**：validator/v10
+- **Web 框架**：[Gin](https://github.com/gin-gonic/gin) - 輕量級的 HTTP 框架
+- **數據庫**：PostgreSQL 12+
+- **ORM**：[GORM](https://gorm.io/) - 物件關係對應庫
+- **數據庫遷移**：[golang-migrate](https://github.com/golang-migrate/migrate) - 數據庫版本控制
+- **配置管理**：[godotenv](https://github.com/joho/godotenv) - 環境變數管理
+- **驗證**：[validator/v10](https://github.com/go-playground/validator) - 請求參數驗證
+- **測試**：[testify](https://github.com/stretchr/testify) - 測試斷言庫
 
 ### 🚀 快速開始
 
@@ -51,7 +52,7 @@ BlockScope/
 
 - Go 1.25.7 或更高版本
 - PostgreSQL 12 或更高版本
-- Docker（可選）
+- Git
 
 #### 安裝步驟
 
@@ -68,74 +69,106 @@ go mod download
 
 3. **配置環境變數**
 
-創建 `.env.local` 文件（開發環境）：
-```env
+用於 **開發環境**（本地測試）：
+```bash
+# 建立 .env.local 檔案
+cat > .env.local << EOF
 APP_ENV=local
 DB_HOST=localhost
 DB_PORT=5432
 DB_USER=postgres
 DB_PASSWORD=your_password
 DB_NAME=blockscope
+EOF
 ```
 
-或創建 `.env` 文件（生產環境）：
-```env
+用於 **生產環境**（部署）：
+```bash
+cat > .env << EOF
 APP_ENV=production
 DB_HOST=your_host
 DB_PORT=5432
 DB_USER=your_user
 DB_PASSWORD=your_password
 DB_NAME=blockscope
+EOF
 ```
 
 4. **初始化數據庫**
 
-手動執行遷移腳本：
+#### 使用 golang-migrate
+
+使用 `golang-migrate` 管理資料庫遷移，遷移檔位於 `migrations/`。重要指令：
+
+執行遷移：
 ```bash
-# 創建表
-psql -U postgres -d blockscope -f migrations/000001_create_daily_active_address.up.sql
+migrate -path migrations -database "postgres://user:password@host:5432/blockscope?sslmode=disable" up
 ```
+
+回滾（單步）：
+```bash
+migrate -path migrations -database "postgres://user:password@host:5432/blockscope?sslmode=disable" down
+```
+
+檔名範例：`000001_create_daily_active_address.up.sql` / `000001_create_daily_active_address.down.sql`。
+
+簡短建議：在測試資料庫先驗證遷移，並將遷移檔納入版本控制。
 
 5. **運行服務**
 
+**開發模式**（預設端口 8080）：
 ```bash
-# 開發環境（默認端口 8080）
 APP_ENV=local go run cmd/server/main.go
+```
 
-# 生產環境（默認端口 80）
+**生產模式**（預設端口 80 - 需要管理員權限）：
+```bash
 APP_ENV=production go run cmd/server/main.go
 ```
 
-服務將在 `http://localhost:8080` 啟動。
+應用將啟動並監聽 `http://localhost:8080`（或您設定的端口）。
 
 ### 📡 API 接口
 
-#### 健康檢查接口
+#### 健康檢查
+
+驗證服務和資料庫連接：
 
 **請求**
 ```http
-GET /healthcheck
+GET /health
 ```
 
-**響應**
+**響應** (200 OK)
 ```json
 {
-  "status": "ok"
+  "status": "ok",
+  "checks": {
+    "API server": true,
+    "DB": "ok"
+  }
 }
 ```
 
-#### 獲取每日活躍地址統計
+備註：若檢查失敗，`status` 可能為 `"fail"`；`checks.DB` 可包含錯誤字串，如 `"fail: <error>"`，且 `API server` 將為 `false`。
+
+#### 查詢每日活躍地址統計
+
+取得特定區塊鏈和日期的每日活躍地址數量：
 
 **請求**
 ```http
 GET /stats/daily-active-address?date=2024-01-01&chain=eth
 ```
 
-**參數**
-- `date`：日期（格式：YYYY-MM-DD）【必需】
-- `chain`：區塊鏈名稱（支持：eth, btc, sol）【必需】
+**查詢參數**
 
-**響應**
+| 參數 | 型態 | 必需 | 說明 |
+|------|------|------|------|
+| `date` | string | 是 | 日期格式 `YYYY-MM-DD` |
+| `chain` | string | 是 | 區塊鏈識別碼（eth、btc、sol） |
+
+**響應** (200 OK)
 ```json
 {
   "id": 1,
@@ -145,7 +178,7 @@ GET /stats/daily-active-address?date=2024-01-01&chain=eth
 }
 ```
 
-**錯誤響應**
+**錯誤響應** (404 Not Found)
 ```json
 {
   "error": "data not found"
@@ -154,38 +187,184 @@ GET /stats/daily-active-address?date=2024-01-01&chain=eth
 
 ### 📋 數據模型
 
-#### DailyActiveAddress（每日活躍地址）
+#### DailyActiveAddress
 
-| 字段 | 類型 | 說明 |
-|------|------|------|
-| ID | uint | 主鍵 |
-| Date | time.Time | 日期（與 Chain 組成唯一索引） |
-| Chain | string | 區塊鏈名稱（與 Date 組成唯一索引） |
-| Count | int64 | 活躍地址數量 |
+| 字段 | 型態 | 約束條件 | 說明 |
+|------|------|--------|------|
+| ID | `uint` | 主鍵 | 唯一識別碼 |
+| Date | `time.Time` | UNIQUE（与Chain）、已索引 | 交易日期，資料庫使用 `DATE` 類型 |
+| Chain | `string` | UNIQUE（与Date）、已索引 | 區塊鏈名稱 |
+| Count | `int64` | Not Null | 活躍地址數量 |
+
+**數據庫結構**
+```sql
+CREATE TABLE daily_active_addresses (
+    id SERIAL PRIMARY KEY,
+	date DATE NOT NULL,
+	chain VARCHAR(50) NOT NULL,
+    count BIGINT NOT NULL,
+    UNIQUE(date, chain)
+);
+
+CREATE INDEX idx_date_chain ON daily_active_addresses (date, chain);
+```
 
 ### 🌍 支持的區塊鏈
 
-- **eth** - Ethereum（以太坊）
-- **btc** - Bitcoin（比特幣）
-- **sol** - Solana（索拉納）
+目前已配置和支持以下區塊鏈：
+
+| 代碼 | 名稱 | 狀態 |
+|------|------|------|
+| `eth` | Ethereum（以太坊） | ✅ 支持 |
+| `btc` | Bitcoin（比特幣） | ✅ 支持 |
+| `sol` | Solana（索拉納） | ✅ 支持 |
+
+**說明**：支持的區塊鏈清單定義在 `internal/config/config.go`，可通過修改配置輕鬆擴展。
 
 ### 📝 配置說明
 
-項目支持不同環境配置：
+應用通過 `.env` 文件支持多環境配置：
 
-| 環境 | 配置文件 | 端口 | 用途 |
-|------|---------|------|------|
-| 開發 | `.env.local` | 8080 | 本地開發 |
-| 生產 | `.env` | 80 | 生產部署 |
+| 環境 | 檔案 | 端口 | 模式 | 用途 |
+|------|------|------|------|------|
+| 開發 | `.env.local` | 8080 | 調試友好 | 本地開發和測試 |
+| 生產 | `.env` | 80 | 優化 | 生產部署 |
+| 測試 | `.env.test` | N/A | 測試專用 | 單元和集成測試 |
 
-### 🔍 主要模塊說明
+**配置優先級**：
+1. 環境變數（來自 `.env` 檔案）
+2. 預設值（程式碼中硬編碼）
 
-- **config**：負責加載和管理應用配置，支持環境隔離
-- **db**：管理數據庫連接，初始化 GORM
-- **repository**：數據訪問層，與數據庫交互
-- **service**：業務邏輯層，處理應用的核心邏輯
-- **handler**：HTTP 請求處理器，接收和返回 HTTP 響應
-- **validator**：請求參數驗證，確保數據有效性
+**配置示例**：
+```env
+# 應用設定
+APP_ENV=local                   # local、production 或 test
+
+# 數據庫連接
+DB_HOST=localhost               # 資料庫伺服器地址
+DB_PORT=5432                    # PostgreSQL 預設端口
+DB_USER=postgres                # 資料庫使用者
+DB_PASSWORD=your_secure_password # 使用者密碼（如無需可留空）
+DB_NAME=blockscope              # 資料庫名稱
+DB_SSLMODE=disable              # SSL 模式（disable、require 等）
+```
+
+### 🏗️ 項目架構
+
+#### 分層架構
+
+項目採用清潔的分層架構模式，實現關注點分離：
+
+```
+┌─────────────────────────────────────────┐
+│  傳輸層（HTTP）                          │
+│  ├── handler/      (請求處理器)         │
+│  ├── request/      (DTO 定義)           │
+│  └── routes/       (路由定義)           │
+├─────────────────────────────────────────┤
+│  業務邏輯層（Service）                   │
+│  ├── 業務邏輯和算法                      │
+│  └── 業務規則驗證                        │
+├─────────────────────────────────────────┤
+│  數據訪問層（Repository）                 │
+│  ├── 數據庫查詢（通過 GORM）            │
+│  └── 數據轉換                           │
+├─────────────────────────────────────────┤
+│  領域層（Domain）                        │
+│  └── DailyActiveAddress 結構體           │
+├─────────────────────────────────────────┤
+│  基礎設施層                              │
+│  ├── config/       (配置管理)            │
+│  ├── db/           (數據庫連接)          │
+│  ├── util/         (工具函式)            │
+│  └── validator/    (請求驗證)            │
+└─────────────────────────────────────────┘
+```
+
+#### 依賴注入
+
+應用在 `bootstrap()` 函式（[cmd/server/main.go](cmd/server/main.go)）中使用手動依賴注入來組裝所有組件：
+
+```go
+// bootstrap 組裝所有依賴並返回已配置的 Gin 路由器
+func bootstrap(env string) (*gin.Engine, string, error) {
+	// 1. 加載配置
+	cfg, err := config.LoadConfig(env)
+	
+	// 2. 初始化數據庫
+	dbConn, err := db.NewDB(cfg.DB)
+	
+	// 3. 組裝依賴（DI）
+	repo := repository.NewDailyActiveAddressRepository(dbConn)
+	svc := service.NewDailyActiveAddressService(repo)
+	handler := handler.NewStatsHandler(svc)
+	
+	// 4. 註冊路由並返回
+	router := setupRoutes(handler)
+	return router, port, nil
+}
+```
+
+**優勢**：
+- ✅ 顯式依賴管理
+- ✅ 易於測試（模擬依賴）
+- ✅ 清晰的組件關係
+- ✅ 無反射魔法
+
+### 🧪 開發
+
+#### 運行測試
+
+執行單元和集成測試：
+
+```bash
+# 執行所有測試
+go test ./...
+
+# 運行覆蓋率測試
+go test -cover ./...
+
+# 運行特定套件的測試
+go test ./internal/repository
+
+# 詳細輸出
+go test -v ./...
+```
+
+**說明**：測試需要 `.env.test` 檔案，應用程式會使用 `util.GetProjectRoot()` 函式自動加載此檔案。
+
+#### 測試數據庫設置
+
+```bash
+# 建立測試數據庫
+psql -U postgres -c "CREATE DATABASE blockscope_test;"
+
+# 使用 golang-migrate 執行遷移
+migrate -path migrations -database "postgres://postgres:password@localhost:5432/blockscope_test?sslmode=disable" up
+
+# 或手動執行遷移
+psql -U postgres -d blockscope_test -f migrations/000001_create_daily_active_address.up.sql
+```
+
+#### 代碼結構約定
+
+- `*_test.go` 檔案用於單元/集成測試
+- 表驅動測試用於驗證器/處理器測試
+- 模擬儲存庫用於業務邏輯層隔離
+- 在儲存庫層進行集成測試
+
+### 📚 模塊說明
+
+| 模塊 | 路徑 | 責任 |
+|------|------|------|
+| **Config** | `internal/config/` | 加載和管理基於環境的配置 |
+| **DB** | `internal/db/` | 通過 GORM 初始化數據庫連接 |
+| **Domain** | `internal/domain/` | 業務實體模型（DailyActiveAddress） |
+| **Repository** | `internal/repository/` | 數據持久化和 CRUD 操作 |
+| **Service** | `internal/service/` | 核心業務邏輯和驗證 |
+| **Transport/HTTP** | `internal/transport/http/` | HTTP 處理器、路由和請求/響應模型 |
+| **Validator** | `internal/validator/` | 請求參數驗證 |
+| **Util** | `internal/util/` | 工具函式（路徑解析等） |
 
 ### 📄 許可證
 
