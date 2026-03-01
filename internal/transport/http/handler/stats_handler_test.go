@@ -93,6 +93,19 @@ func TestStatsHandler_GetDailyActiveAddress(t *testing.T) {
 		assert.Contains(t, respWriter.Body.String(), "error")
 	})
 
+	t.Run("無此鏈_400", func(t *testing.T) {
+		mockServic := new(MockDailyActiveAddressService)
+		mockHandler := NewStatsHandler(mockServic)
+		router := setupTestRouter(mockHandler)
+
+		req := httptest.NewRequest("GET", "/stats/daily-active-address?date=2024-05-20&chain=sui", nil)
+		respWriter := httptest.NewRecorder()
+		router.ServeHTTP(respWriter, req)
+
+		assert.Equal(t, http.StatusBadRequest, respWriter.Code)
+		assert.Contains(t, respWriter.Body.String(), "error")
+	})
+
 	t.Run("找不到資料_404", func(t *testing.T) {
 		mockService := new(MockDailyActiveAddressService)
 		mockHandler := NewStatsHandler(mockService)
