@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -65,6 +66,9 @@ func TestStatsHandler_GetDailyActiveAddress(t *testing.T) {
 
 		// 驗證結果
 		assert.Equal(t, http.StatusOK, respWriter.Code)
+		var resp map[string]interface{}
+		json.Unmarshal(respWriter.Body.Bytes(), &resp)
+		assert.Equal(t, float64(1000), resp["count"])
 		assert.Contains(t, respWriter.Body.String(), `"count":1000`)
 		mockService.AssertExpectations(t)
 	})
