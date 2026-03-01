@@ -10,6 +10,7 @@ import (
 	"github.com/Yintc123/BlockScope/internal/repository"
 	"github.com/Yintc123/BlockScope/internal/service"
 	"github.com/Yintc123/BlockScope/internal/transport/http/handler"
+	"github.com/Yintc123/BlockScope/internal/transport/http/middleware"
 	http "github.com/Yintc123/BlockScope/internal/transport/http/routes"
 	"github.com/gin-gonic/gin"
 )
@@ -60,6 +61,9 @@ func bootstrap(env string) (*gin.Engine, string, error) {
 
 	// D. 初始化 router
 	router := gin.Default()
+
+	// 註冊處理錯誤的 middleware
+	router.Use(middleware.ErrorHandler())
 
 	// 註冊根路由
 	http.RegisterRootRoutes(

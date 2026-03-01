@@ -22,14 +22,19 @@ func NewStatsHandler(service service.DailyActiveAddressService) *StatsHandler {
 func (handler *StatsHandler) GetDailyActiveAddress(ctx *gin.Context) {
 	var req request.DailyActiveAddressQuery
 
-	// 把 HTTP Request 的 query string（URL 參數）解析後再填進 req struct
+	// 綁定 Query 參數：把 HTTP Request 的 query string（URL 參數）解析後再填進 req struct
 	if err := ctx.ShouldBindQuery(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		// ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		// 將 AppError 結構的物件放入 ctx.Errors 陣列中，return 之後會由 middleware 處理
+		ctx.Error(domain.NewBadRequestError("Parameter binding failed: " + err.Error()))
 		return
 	}
 
+	// 驗證結構(validator)
 	if err := validator.Validator.Struct(req); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		// ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		// 將 AppError 結構的物件放入 ctx.Errors 陣列中，return 之後會由 middleware 處理
+		ctx.Error(domain.NewBadRequestError("Request validation failed: " + err.Error()))
 		return
 	}
 
@@ -43,13 +48,17 @@ func (handler *StatsHandler) GetDailyActiveAddress(ctx *gin.Context) {
 
 	// 優先處理錯誤
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "db connection failed"})
+		// ctx.JSON(http.StatusInternalServerError, gin.H{"error": "db connection failed"})
+		// 將 AppError 結構的物件放入 ctx.Errors 陣列中，return 之後會由 middleware 處理
+		ctx.Error(domain.NewInternalError(err, "failed to get daily active address"))
 		return
 	}
 
 	// 再處理查無資料
 	if result == nil {
-		ctx.JSON(http.StatusNotFound, gin.H{"error": "data not found"})
+		// ctx.JSON(http.StatusNotFound, gin.H{"error": "data not found"})
+		// 將 AppError 結構的物件放入 ctx.Errors 陣列中，return 之後會由 middleware 處理
+		ctx.Error(domain.NewNotFoundError("data not found"))
 		return
 	}
 
