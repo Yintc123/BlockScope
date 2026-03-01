@@ -40,10 +40,11 @@ func TestStatsHandler_GetDailyActiveAddress(t *testing.T) {
 		// 於 t.Run 內初始化 mockService 和 mockHandler 進行測試隔離
 		mockService := new(MockDailyActiveAddressService)
 		mockHandler := NewStatsHandler(mockService)
+		router := setupTestRouter(mockHandler)
 		// 按照 routes 檔案的定義註冊路由
-		router := gin.New()
-		statsGroup := router.Group("stats")
-		statsGroup.GET("/daily-active-address", mockHandler.GetDailyActiveAddress)
+		// router := gin.New()
+		// statsGroup := router.Group("stats")
+		// statsGroup.GET("/daily-active-address", mockHandler.GetDailyActiveAddress)
 
 		// 準備測試數據
 		var targetDate time.Time = time.Date(2024, 5, 20, 0, 0, 0, 0, time.UTC)
@@ -71,10 +72,11 @@ func TestStatsHandler_GetDailyActiveAddress(t *testing.T) {
 	t.Run("日期格式錯誤_400", func(t *testing.T) {
 		mockService := new(MockDailyActiveAddressService)
 		mockHandler := NewStatsHandler(mockService)
+		router := setupTestRouter(mockHandler)
 
-		router := gin.New()
-		statsGroup := router.Group("/stats")
-		statsGroup.GET("/daily-active-address", mockHandler.GetDailyActiveAddress)
+		// router := gin.New()
+		// statsGroup := router.Group("/stats")
+		// statsGroup.GET("/daily-active-address", mockHandler.GetDailyActiveAddress)
 
 		// 發送錯誤的日期格式
 		req := httptest.NewRequest("GET", "/stats/daily-active-address?date=2024/05/20&chain=btc", nil)
@@ -90,9 +92,10 @@ func TestStatsHandler_GetDailyActiveAddress(t *testing.T) {
 	t.Run("找不到資料_404", func(t *testing.T) {
 		mockService := new(MockDailyActiveAddressService)
 		mockHandler := NewStatsHandler(mockService)
-		router := gin.New()
-		statsGroup := router.Group("/stats")
-		statsGroup.GET("/daily-active-address", mockHandler.GetDailyActiveAddress)
+		router := setupTestRouter(mockHandler)
+		// router := gin.New()
+		// statsGroup := router.Group("/stats")
+		// statsGroup.GET("/daily-active-address", mockHandler.GetDailyActiveAddress)
 
 		// 準備測試數據
 		var targetDate time.Time = time.Date(2024, 5, 20, 0, 0, 0, 0, time.UTC)
@@ -113,9 +116,10 @@ func TestStatsHandler_GetDailyActiveAddress(t *testing.T) {
 	t.Run("連線資料庫失敗_500", func(t *testing.T) {
 		mockService := new(MockDailyActiveAddressService)
 		mockHandler := NewStatsHandler(mockService)
-		router := gin.New()
-		statsGroup := router.Group("/stats")
-		statsGroup.GET("/daily-active-address", mockHandler.GetDailyActiveAddress)
+		router := setupTestRouter(mockHandler)
+		// router := gin.New()
+		// statsGroup := router.Group("/stats")
+		// statsGroup.GET("/daily-active-address", mockHandler.GetDailyActiveAddress)
 		var targetDate time.Time = time.Date(2024, 5, 20, 0, 0, 0, 0, time.UTC)
 		var targetChain string = "btc"
 		var mockResult *domain.DailyActiveAddress = nil
@@ -130,4 +134,13 @@ func TestStatsHandler_GetDailyActiveAddress(t *testing.T) {
 		assert.Contains(t, respWriter.Body.String(), "db connection failed")
 		mockService.AssertExpectations(t)
 	})
+}
+
+// 輔助函式：快速建立測試用的 gin Engine 與路由
+func setupTestRouter(handler *StatsHandler) *gin.Engine {
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	statsGroup := router.Group("/stats")
+	statsGroup.GET("/daily-active-address", handler.GetDailyActiveAddress)
+	return router
 }
