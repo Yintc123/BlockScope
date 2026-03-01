@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/Yintc123/BlockScope/internal/domain"
+	"github.com/Yintc123/BlockScope/internal/transport/http/middleware"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -91,7 +92,7 @@ func TestStatsHandler_GetDailyActiveAddress(t *testing.T) {
 		// 驗證結果，回傳 BadRequest 400
 		assert.Equal(t, http.StatusBadRequest, respWriter.Code)
 		// 這裡會觸發 Validator 的錯誤
-		assert.Contains(t, respWriter.Body.String(), "error")
+		assert.Contains(t, respWriter.Body.String(), "Request validation failed")
 	})
 
 	t.Run("UnsupportedChain_400", func(t *testing.T) {
@@ -104,7 +105,7 @@ func TestStatsHandler_GetDailyActiveAddress(t *testing.T) {
 		router.ServeHTTP(respWriter, req)
 
 		assert.Equal(t, http.StatusBadRequest, respWriter.Code)
-		assert.Contains(t, respWriter.Body.String(), "error")
+		assert.Contains(t, respWriter.Body.String(), "Request validation failed")
 	})
 
 	t.Run("DataNotFound_404", func(t *testing.T) {
@@ -127,7 +128,7 @@ func TestStatsHandler_GetDailyActiveAddress(t *testing.T) {
 		router.ServeHTTP(respWriter, req)
 
 		assert.Equal(t, http.StatusNotFound, respWriter.Code)
-		assert.Contains(t, respWriter.Body.String(), "error")
+		assert.Contains(t, respWriter.Body.String(), "data not found")
 		mockService.AssertExpectations(t)
 	})
 
@@ -142,14 +143,14 @@ func TestStatsHandler_GetDailyActiveAddress(t *testing.T) {
 		var targetChain string = "btc"
 		var mockResult *domain.DailyActiveAddress = nil
 
-		mockService.On("GetDailyActiveAddress", mock.Anything, targetDate, targetChain).Return(mockResult, errors.New("db connection failed")).Once()
+		mockService.On("GetDailyActiveAddress", mock.Anything, targetDate, targetChain).Return(mockResult, errors.New("Internal Server Error")).Once()
 
 		req := httptest.NewRequest("GET", "/stats/daily-active-address?date=2024-05-20&chain=btc", nil)
 		respWriter := httptest.NewRecorder()
 		router.ServeHTTP(respWriter, req)
 
 		assert.Equal(t, http.StatusInternalServerError, respWriter.Code)
-		assert.Contains(t, respWriter.Body.String(), "db connection failed")
+		assert.Contains(t, respWriter.Body.String(), "failed to get daily active address")
 		mockService.AssertExpectations(t)
 	})
 }
@@ -158,6 +159,7 @@ func TestStatsHandler_GetDailyActiveAddress(t *testing.T) {
 func setupTestRouter(handler *StatsHandler) *gin.Engine {
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
+	router.Use(middleware.ErrorHandler())
 	statsGroup := router.Group("/stats")
 	statsGroup.GET("/daily-active-address", handler.GetDailyActiveAddress)
 	return router
