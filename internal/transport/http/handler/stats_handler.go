@@ -30,8 +30,11 @@ func (handler *StatsHandler) GetDailyActiveAddress(ctx *gin.Context) {
 		return
 	}
 
+	// // 將 Chain 的字串統一更新為小寫
+	// req.Chain = strings.ToLower(req.Chain)
+
 	// 驗證結構(validator)
-	if err := validator.Validator.Struct(req); err != nil {
+	if err := validator.Validator.Struct(&req); err != nil {
 		// ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		// 將 AppError 結構的物件放入 ctx.Errors 陣列中，return 之後會由 middleware 處理
 		ctx.Error(domain.NewBadRequestError("Request validation failed: " + err.Error()))

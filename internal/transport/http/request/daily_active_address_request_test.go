@@ -63,7 +63,7 @@ func TestDailyActiveAddressQuery_Validation(t *testing.T) {
 
 	for _, tt := range testcases {
 		t.Run(tt.name, func(t *testing.T) {
-			err := validate.Struct(tt.input)
+			err := validate.Struct(&tt.input)
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {

@@ -5,5 +5,5 @@ package request
 
 type DailyActiveAddressQuery struct {
 	Date  string `json:"date" form:"date" validate:"required,datetime=2006-01-02"`
-	Chain string `json:"chain" form:"chain" validate:"required,oneof=eth btc sol"`
+	Chain string `json:"chain" form:"chain" validate:"required,lowercase,oneof=eth btc sol"`
 }
