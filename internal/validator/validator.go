@@ -10,6 +10,7 @@ import (
 
 var Validator *validator.Validate
 
+// 啟動專案的時候，會直接執行 package 的 init()
 func init() {
 	fmt.Println("The package, validate, init starts...")
 	Validator = validator.New()
