@@ -37,7 +37,7 @@ func TestStatsHandler_GetDailyActiveAddress(t *testing.T) {
 	// 設定 gin 為測試模式，減少日誌輸出
 	gin.SetMode(gin.TestMode)
 
-	t.Run("成功取得資料_200", func(t *testing.T) {
+	t.Run("Success_200", func(t *testing.T) {
 		// 於 t.Run 內初始化 mockService 和 mockHandler 進行測試隔離
 		mockService := new(MockDailyActiveAddressService)
 		mockHandler := NewStatsHandler(mockService)
@@ -73,7 +73,7 @@ func TestStatsHandler_GetDailyActiveAddress(t *testing.T) {
 		mockService.AssertExpectations(t)
 	})
 
-	t.Run("日期格式錯誤_400", func(t *testing.T) {
+	t.Run("InvalidDateFormat_400", func(t *testing.T) {
 		mockService := new(MockDailyActiveAddressService)
 		mockHandler := NewStatsHandler(mockService)
 		router := setupTestRouter(mockHandler)
@@ -93,7 +93,7 @@ func TestStatsHandler_GetDailyActiveAddress(t *testing.T) {
 		assert.Contains(t, respWriter.Body.String(), "error")
 	})
 
-	t.Run("無此鏈_400", func(t *testing.T) {
+	t.Run("UnsupportedChain_400", func(t *testing.T) {
 		mockServic := new(MockDailyActiveAddressService)
 		mockHandler := NewStatsHandler(mockServic)
 		router := setupTestRouter(mockHandler)
@@ -106,7 +106,7 @@ func TestStatsHandler_GetDailyActiveAddress(t *testing.T) {
 		assert.Contains(t, respWriter.Body.String(), "error")
 	})
 
-	t.Run("找不到資料_404", func(t *testing.T) {
+	t.Run("DataNotFound_404", func(t *testing.T) {
 		mockService := new(MockDailyActiveAddressService)
 		mockHandler := NewStatsHandler(mockService)
 		router := setupTestRouter(mockHandler)
@@ -130,7 +130,7 @@ func TestStatsHandler_GetDailyActiveAddress(t *testing.T) {
 		mockService.AssertExpectations(t)
 	})
 
-	t.Run("連線資料庫失敗_500", func(t *testing.T) {
+	t.Run("DatabaseConnectionError_500", func(t *testing.T) {
 		mockService := new(MockDailyActiveAddressService)
 		mockHandler := NewStatsHandler(mockService)
 		router := setupTestRouter(mockHandler)
