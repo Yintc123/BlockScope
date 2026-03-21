@@ -21,7 +21,8 @@ func init() {
 
 // 驗證欄位是否為字串並將其轉為小寫
 func validateAndLowercase(fieldLevel validator.FieldLevel) bool {
-	field := fieldLevel.Field()
+	// 獲取「當前正在被驗證的欄位值」
+	var field reflect.Value = fieldLevel.Field()
 
 	// 確保欄位為字串型別，使用 reflect.String 來檢查欄位的型別
 	if field.Kind() != reflect.String {
