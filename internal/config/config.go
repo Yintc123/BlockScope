@@ -84,6 +84,7 @@ func LoadConfig(env string) (*Config, error) {
 	case "test":
 		// 要依據 path.go 的位置尋找 .env.test 的檔案路徑，故傳入 skip = 0
 		var rootPath string = util.GetProjectRoot(0, ".env.test")
+		// 由於 go test 載入 .env.test 的位置是測試檔的位置，故需要回到根目錄載入 .env.test
 		err := godotenv.Load(filepath.Join(rootPath, ".env.test"))
 		if err != nil {
 			return nil, fmt.Errorf("could not load .env.test from %s: %w", rootPath, err)
