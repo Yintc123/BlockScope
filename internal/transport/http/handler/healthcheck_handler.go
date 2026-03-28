@@ -8,10 +8,10 @@ import (
 )
 
 type HealthcheckHandler struct {
-	service *service.HealthcheckService
+	service service.HealthcheckService
 }
 
-func NewHealthcheckHandler(service *service.HealthcheckService) *HealthcheckHandler {
+func NewHealthcheckHandler(service service.HealthcheckService) *HealthcheckHandler {
 	return &HealthcheckHandler{service: service}
 }
 
